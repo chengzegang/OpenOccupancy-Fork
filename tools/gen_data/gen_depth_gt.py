@@ -133,16 +133,3 @@ if __name__ == "__main__":
     val_infos = pickle.load(open(info_path_val, "rb"))["infos"]
     all_infos = train_infos + val_infos
     list(map(worker, tqdm(all_infos)))
-    """
-    #numpy is multihreaded, this actually slows down
-    from concurrent.futures import ProcessPoolExecutor, as_completed
-
-    with ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
-        futures = executor.map(worker, all_infos)
-        for f in tqdm(
-            as_completed(futures),
-            total=len(all_infos),
-        ):
-            f.result()
-        executor.shutdown(wait=True)
-    """

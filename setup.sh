@@ -7,6 +7,7 @@ folder=$(dirname $(readlink -f "$0"))
 workdir=$(pwd)
 
 cd $folder
+
 conda create -n OpenOccupancy
 conda activate OpenOccupancy
 echo "Installing requirements"
