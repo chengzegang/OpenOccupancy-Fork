@@ -10,12 +10,8 @@ RUN wget -O Mambaforge.sh "https://github.com/conda-forge/miniforge/releases/lat
 RUN bash Mambaforge.sh -b -p /opt/conda
 ENV PATH="/opt/conda/bin:${PATH}"
 RUN conda init bash
-RUN conda --version
-
-SHELL ["/opt/conda/bin/conda", "run", "-n", "base", "/bin/bash", "-c"]
-
+SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
 RUN conda create -n OpenOccupancy python=3.11 -y --solver=libmamba -c conda-forge
-SHELL ["/opt/conda/bin/conda", "activate", "OpenOccupancy"]
+SHELL ["conda", "run", "-n", "OpenOccupancy", "/bin/bash", "-c"]
 RUN bash setup.sh
-
 ENTRYPOINT ["conda", "activate", "OpenOccupancy"]

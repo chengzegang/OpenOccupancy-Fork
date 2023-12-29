@@ -63,7 +63,6 @@ def KL_sep(p, target):
 
 
 def geo_scal_loss(pred, ssc_target, ignore_index=255, non_empty_idx=0):
-
     # Get softmax probabilities
     pred = F.softmax(pred, dim=1)
 
@@ -80,9 +79,11 @@ def geo_scal_loss(pred, ssc_target, ignore_index=255, non_empty_idx=0):
 
     eps = 1e-5
     intersection = (nonempty_target * nonempty_probs).sum()
-    precision = intersection / (nonempty_probs.sum()+eps)
-    recall = intersection / (nonempty_target.sum()+eps)
-    spec = ((1 - nonempty_target) * (empty_probs)).sum() / ((1 - nonempty_target).sum()+eps)
+    precision = intersection / (nonempty_probs.sum() + eps)
+    recall = intersection / (nonempty_target.sum() + eps)
+    spec = ((1 - nonempty_target) * (empty_probs)).sum() / (
+        (1 - nonempty_target).sum() + eps
+    )
     return (
         F.binary_cross_entropy(precision, torch.ones_like(precision))
         + F.binary_cross_entropy(recall, torch.ones_like(recall))
@@ -98,7 +99,6 @@ def sem_scal_loss(pred, ssc_target, ignore_index=255):
     mask = ssc_target != ignore_index
     n_classes = pred.shape[1]
     for i in range(0, n_classes):
-
         # Get probability of class i
         p = pred[:, i]
 
@@ -147,6 +147,7 @@ def CE_ssc_loss(pred, target, class_weights=None, ignore_index=255):
     loss = criterion(pred, target.long())
 
     return loss
+
 
 def vel_loss(pred, gt):
     return F.l1_loss(pred, gt)

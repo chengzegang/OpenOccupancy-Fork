@@ -2,9 +2,7 @@ from setuptools import find_packages, setup
 
 import os
 import torch
-from os import path as osp
 from torch.utils.cpp_extension import BuildExtension, CppExtension, CUDAExtension
-import torch
 
 
 def make_cuda_ext(

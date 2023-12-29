@@ -9,6 +9,7 @@ from mmdet.models import NECKS
 
 import pdb
 
+
 @NECKS.register_module()
 class SECONDFPN3D(BaseModule):
     """FPN used in SECOND/PointPillars/PartA2/MVXNet.
@@ -23,19 +24,21 @@ class SECONDFPN3D(BaseModule):
         conv_cfg (dict): Config dict of conv layers.
         use_conv_for_no_stride (bool): Whether to use conv when stride is 1.
     """
-    def __init__(self,
-                 in_channels=[128, 128, 256],
-                 out_channels=[256, 256, 256],
-                 upsample_strides=[1, 2, 4],
-                 norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
-                 upsample_cfg=dict(type='deconv3d', bias=False),
-                 conv_cfg=dict(type='Conv3d', bias=False),
-                 use_conv_for_no_stride=False,
-                 init_cfg=None):
-        
-        # replacing GN with BN3D, performance drops from 42.5 to 40.9. 
+
+    def __init__(
+        self,
+        in_channels=[128, 128, 256],
+        out_channels=[256, 256, 256],
+        upsample_strides=[1, 2, 4],
+        norm_cfg=dict(type="GN", num_groups=32, requires_grad=True),
+        upsample_cfg=dict(type="deconv3d", bias=False),
+        conv_cfg=dict(type="Conv3d", bias=False),
+        use_conv_for_no_stride=False,
+        init_cfg=None,
+    ):
+        # replacing GN with BN3D, performance drops from 42.5 to 40.9.
         # the difference may be exaggerated because the performance can fluncate a lot
-        
+
         super(SECONDFPN3D, self).__init__(init_cfg=init_cfg)
         assert len(out_channels) == len(upsample_strides) == len(in_channels)
         self.in_channels = in_channels
@@ -51,7 +54,8 @@ class SECONDFPN3D(BaseModule):
                     in_channels=in_channels[i],
                     out_channels=out_channel,
                     kernel_size=upsample_strides[i],
-                    stride=upsample_strides[i])
+                    stride=upsample_strides[i],
+                )
             else:
                 stride = np.round(1 / stride).astype(np.int64)
                 upsample_layer = build_conv_layer(
@@ -59,19 +63,22 @@ class SECONDFPN3D(BaseModule):
                     in_channels=in_channels[i],
                     out_channels=out_channel,
                     kernel_size=stride,
-                    stride=stride)
+                    stride=stride,
+                )
 
-            deblock = nn.Sequential(upsample_layer,
-                                    build_norm_layer(norm_cfg, out_channel)[1],
-                                    nn.ReLU(inplace=True))
+            deblock = nn.Sequential(
+                upsample_layer,
+                build_norm_layer(norm_cfg, out_channel)[1],
+                nn.ReLU(inplace=True),
+            )
             deblocks.append(deblock)
-        
+
         self.deblocks = nn.ModuleList(deblocks)
 
         if init_cfg is None:
             self.init_cfg = [
-                dict(type='Kaiming', layer='ConvTranspose2d'),
-                dict(type='Constant', layer='NaiveSyncBatchNorm2d', val=1.0)
+                dict(type="Kaiming", layer="ConvTranspose2d"),
+                dict(type="Constant", layer="NaiveSyncBatchNorm2d", val=1.0),
             ]
 
     @auto_fp16()
@@ -86,10 +93,10 @@ class SECONDFPN3D(BaseModule):
         """
         assert len(x) == len(self.in_channels)
         ups = [deblock(x[i]) for i, deblock in enumerate(self.deblocks)]
-        
+
         if len(ups) > 1:
             out = torch.cat(ups, dim=1)
         else:
             out = ups[0]
-        
+
         return [out]

@@ -10,6 +10,7 @@ from mmdet.models import NECKS
 import torch.nn.functional as F
 import pdb
 
+
 @NECKS.register_module()
 class FPN3D(BaseModule):
     """FPN used in SECOND/PointPillars/PartA2/MVXNet.
@@ -24,43 +25,58 @@ class FPN3D(BaseModule):
         conv_cfg (dict): Config dict of conv layers.
         use_conv_for_no_stride (bool): Whether to use conv when stride is 1.
     """
-    def __init__(self,
-                 in_channels=[80, 160, 320, 640],
-                 out_channels=256,
-                 norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
-                 conv_cfg=dict(type='Conv3d'),
-                 act_cfg=dict(type='ReLU'),
-                 with_cp=False,
-                 upsample_cfg=dict(mode='trilinear'),
-                 init_cfg=None):
+
+    def __init__(
+        self,
+        in_channels=[80, 160, 320, 640],
+        out_channels=256,
+        norm_cfg=dict(type="GN", num_groups=32, requires_grad=True),
+        conv_cfg=dict(type="Conv3d"),
+        act_cfg=dict(type="ReLU"),
+        with_cp=False,
+        upsample_cfg=dict(mode="trilinear"),
+        init_cfg=None,
+    ):
         super(FPN3D, self).__init__(init_cfg=init_cfg)
-        
+
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.fp16_enabled = False
         self.upsample_cfg = upsample_cfg
         self.with_cp = with_cp
-        
+
         self.num_out = len(self.in_channels)
         self.lateral_convs = nn.ModuleList()
         self.fpn_convs = nn.ModuleList()
-        
+
         for i in range(self.num_out):
             # 拓展感受野
             l_conv = nn.Sequential(
-                ConvModule(in_channels[i], out_channels, 
-                    kernel_size=1, padding=0,
-                    conv_cfg=conv_cfg, norm_cfg=norm_cfg, 
-                    act_cfg=act_cfg, bias=False, 
-                    inplace=True),
+                ConvModule(
+                    in_channels[i],
+                    out_channels,
+                    kernel_size=1,
+                    padding=0,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=norm_cfg,
+                    act_cfg=act_cfg,
+                    bias=False,
+                    inplace=True,
+                ),
             )
-            
+
             fpn_conv = nn.Sequential(
-                ConvModule(out_channels, out_channels, 
-                    kernel_size=3, padding=1,
-                    conv_cfg=conv_cfg, norm_cfg=norm_cfg, 
-                    act_cfg=act_cfg, bias=False, 
-                    inplace=True),
+                ConvModule(
+                    out_channels,
+                    out_channels,
+                    kernel_size=3,
+                    padding=1,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=norm_cfg,
+                    act_cfg=act_cfg,
+                    bias=False,
+                    inplace=True,
+                ),
             )
 
             self.lateral_convs.append(l_conv)
@@ -90,13 +106,14 @@ class FPN3D(BaseModule):
         # build down-top path
         for i in range(self.num_out - 1, 0, -1):
             prev_shape = laterals[i - 1].shape[2:]
-            laterals[i - 1] = laterals[i - 1] + F.interpolate(laterals[i], 
-                    size=prev_shape, align_corners=False, **self.upsample_cfg)
-        
+            laterals[i - 1] = laterals[i - 1] + F.interpolate(
+                laterals[i], size=prev_shape, align_corners=False, **self.upsample_cfg
+            )
+
         # outs = [
         #     self.fpn_convs[i](laterals[i]) for i in range(self.num_out)
         # ]
-        
+
         outs = []
         for i, fpn_conv in enumerate(self.fpn_convs):
             if self.with_cp:
@@ -104,5 +121,5 @@ class FPN3D(BaseModule):
             else:
                 out_i = fpn_conv(laterals[i])
             outs.append(out_i)
-        
+
         return outs

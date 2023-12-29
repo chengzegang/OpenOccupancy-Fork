@@ -16,7 +16,7 @@ class VisFuser(nn.Module):
         self.in_channels = in_channels
         self.out_channels = out_channels
         if norm_cfg is None:
-            norm_cfg = dict(type='BN3d', eps=1e-3, momentum=0.01)
+            norm_cfg = dict(type="BN3d", eps=1e-3, momentum=0.01)
 
         self.img_enc = nn.Sequential(
             nn.Conv3d(in_channels, out_channels, 7, padding=3, bias=False),
@@ -31,7 +31,7 @@ class VisFuser(nn.Module):
             nn.ReLU(True),
         )
         self.vis_enc = nn.Sequential(
-            nn.Conv3d(2*out_channels, 16, 3, padding=1, bias=False),
+            nn.Conv3d(2 * out_channels, 16, 3, padding=1, bias=False),
             build_norm_layer(norm_cfg, 16)[1],
             # nn.BatchNorm3d(16),
             nn.ReLU(True),
@@ -40,7 +40,6 @@ class VisFuser(nn.Module):
         )
 
     def forward(self, img_voxel_feats, pts_voxel_feats):
-
         img_voxel_feats = self.img_enc(img_voxel_feats)
         pts_voxel_feats = self.pts_enc(pts_voxel_feats)
         vis_weight = self.vis_enc(torch.cat([img_voxel_feats, pts_voxel_feats], dim=1))

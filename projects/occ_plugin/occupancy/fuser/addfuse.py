@@ -20,9 +20,10 @@ class AddFuser(nn.Module):
                 use_camera=True,
                 use_radar=False,
                 use_map=False,
-                use_external=False)
-        self.use_lidar = input_modality['use_lidar']
-        self.use_img = input_modality['use_camera']
+                use_external=False,
+            )
+        self.use_lidar = input_modality["use_lidar"]
+        self.use_img = input_modality["use_camera"]
 
         if self.use_img:
             self.img_enc = nn.Sequential(

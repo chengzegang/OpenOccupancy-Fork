@@ -7,9 +7,27 @@ import numpy as np
 #                 2158753, 26539491, 4004729, 34838681, 75173306, 2255027978, 50959399, 646022466, 869055679,
 #                 1446141335, 1724391378, 2242961742295])
 
-nusc_class_frequencies = np.array([2242961742295, 25985376, 1561108, 28862014, 196106643, 15920504,
-                2158753, 26539491, 4004729, 34838681, 75173306, 2255027978, 50959399, 646022466, 869055679,
-                1446141335, 1724391378])
+nusc_class_frequencies = np.array(
+    [
+        2242961742295,
+        25985376,
+        1561108,
+        28862014,
+        196106643,
+        15920504,
+        2158753,
+        26539491,
+        4004729,
+        34838681,
+        75173306,
+        2255027978,
+        50959399,
+        646022466,
+        869055679,
+        1446141335,
+        1724391378,
+    ]
+)
 
 # nusc_class_names = [
 #     "noise",
@@ -91,6 +109,7 @@ classname_to_color = {  # RGB.
     16: (0, 175, 0),  # Green vegetation
 }
 
+
 def KL_sep(p, target):
     """
     KL divergence on nonzeros classes
@@ -102,7 +121,6 @@ def KL_sep(p, target):
 
 
 def geo_scal_loss(pred, ssc_target):
-
     # Get softmax probabilities
     pred = F.softmax(pred, dim=1)
 
@@ -136,7 +154,6 @@ def sem_scal_loss(pred, ssc_target):
     mask = ssc_target != 255
     n_classes = pred.shape[1]
     for i in range(0, n_classes):
-
         # Get probability of class i
         p = pred[:, i, :, :, :]
 

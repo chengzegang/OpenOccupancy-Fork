@@ -1,4 +1,3 @@
-
 # Copyright (c) OpenMMLab. All rights reserved.
 import numpy as np
 from mmcv.parallel import DataContainer as DC
@@ -21,10 +20,10 @@ class OccDefaultFormatBundle3D(DefaultFormatBundle3D):
     - gt_bboxes_ignore: (1)to tensor, (2)to DataContainer
     - gt_labels: (1)to tensor, (2)to DataContainer
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        
     def __call__(self, results):
         """Call function to transform and format common fields in results.
         Args:
@@ -36,10 +35,10 @@ class OccDefaultFormatBundle3D(DefaultFormatBundle3D):
         # Format 3D data
         results = super(OccDefaultFormatBundle3D, self).__call__(results)
 
-        if 'gt_occ' in results.keys():
-            results['gt_occ'] = DC(to_tensor(results['gt_occ']), stack=True)
+        if "gt_occ" in results.keys():
+            results["gt_occ"] = DC(to_tensor(results["gt_occ"]), stack=True)
 
-        if 'gt_vel' in results.keys():
-            results['gt_vel'] = DC(to_tensor(results['gt_vel']), stack=False)
+        if "gt_vel" in results.keys():
+            results["gt_vel"] = DC(to_tensor(results["gt_vel"]), stack=False)
 
         return results

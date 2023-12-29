@@ -1,28 +1,31 @@
 # -*- coding:utf-8 -*-
 # author: Xinge
-# @file: metric_util.py 
+# @file: metric_util.py
 
 import numpy as np
 
+
 def fast_hist(pred, label, n):
     k = (label >= 0) & (label < n)
-    bin_count = np.bincount(
-        n * label[k].astype(int) + pred[k], minlength=n ** 2)
-    return bin_count[:n ** 2].reshape(n, n)
+    bin_count = np.bincount(n * label[k].astype(int) + pred[k], minlength=n**2)
+    return bin_count[: n**2].reshape(n, n)
+
 
 def per_class_iu(hist):
     return np.diag(hist) / (hist.sum(1) + hist.sum(0) - np.diag(hist))
 
+
 def fast_hist_crop(output, target, unique_label):
     hist = fast_hist(output.flatten(), target.flatten(), np.max(unique_label) + 2)
-    
+
     # print('groundtruth noise classified as: ', hist[0])
     # print('predicted noise are actually: ', hist[:, 0])
-    
+
     hist = hist[unique_label + 1, :]
     hist = hist[:, unique_label + 1]
-    
+
     return hist
+
 
 class SSCMetrics:
     def __init__(self, class_names, ignore_idx=255, empty_idx=None):
@@ -40,7 +43,7 @@ class SSCMetrics:
 
         return (
             np.bincount(
-                n_cl * gt[k].astype(int) + pred[k].astype(int), minlength=n_cl ** 2
+                n_cl * gt[k].astype(int) + pred[k].astype(int), minlength=n_cl**2
             ).reshape(n_cl, n_cl),
             correct,
             labeled,
@@ -99,7 +102,6 @@ class SSCMetrics:
         }
 
     def reset(self):
-
         self.completion_tp = 0
         self.completion_fp = 0
         self.completion_fn = 0
@@ -177,10 +179,14 @@ class SSCMetrics:
             if nonempty is not None:
                 nonempty_idx = nonempty[idx, :].reshape(-1)
                 y_pred = y_pred[
-                    np.where(np.logical_and(nonempty_idx == 1, y_true != self.ignore_idx))
+                    np.where(
+                        np.logical_and(nonempty_idx == 1, y_true != self.ignore_idx)
+                    )
                 ]
                 y_true = y_true[
-                    np.where(np.logical_and(nonempty_idx == 1, y_true != self.ignore_idx))
+                    np.where(
+                        np.logical_and(nonempty_idx == 1, y_true != self.ignore_idx)
+                    )
                 ]
             for j in range(_C):  # for each class
                 tp = np.array(np.where(np.logical_and(y_true == j, y_pred == j))).size
