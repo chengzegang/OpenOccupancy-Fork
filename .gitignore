@@ -17,7 +17,6 @@ __pycache__/
 build/
 ckpts/
 ckpts
-data
 test/
 val/
 work_dirs/
@@ -139,3 +138,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+data/*
+!data/nuscenes_occ_infos_train.pkl
+!data/nuscenes_occ_infos_val.pkl

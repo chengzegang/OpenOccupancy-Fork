@@ -11,7 +11,7 @@ RUN bash Mambaforge.sh -b -p /opt/conda
 ENV PATH="/opt/conda/bin:${PATH}"
 RUN conda init bash
 SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
-RUN conda create -n OpenOccupancy python=3.11 -y --solver=libmamba -c conda-forge
+RUN conda create -n OpenOccupancy python=3.9 -y --solver=libmamba -c conda-forge
 SHELL ["conda", "run", "-n", "OpenOccupancy", "/bin/bash", "-c"]
 RUN bash setup.sh
-ENTRYPOINT ["conda", "activate", "OpenOccupancy"]
+CMD conda activate OpenOccupancy && bash run.sh

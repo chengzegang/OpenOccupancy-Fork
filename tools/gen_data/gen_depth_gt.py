@@ -1,19 +1,28 @@
-from itertools import chain
+from functools import partial
 import os
-from multiprocessing import Pool
-
 import mmcv
 import numpy as np
 from nuscenes.utils.data_classes import LidarPointCloud
 from nuscenes.utils.geometry_utils import view_points
 from pyquaternion import Quaternion
-import copy
 import pickle
 from tqdm.auto import tqdm
+from pathlib import Path
+
+__module_dir__ = Path(__file__).resolve().parent.parent.parent
+_CAM_KEYS = [
+    "CAM_FRONT_LEFT",
+    "CAM_FRONT",
+    "CAM_FRONT_RIGHT",
+    "CAM_BACK_RIGHT",
+    "CAM_BACK",
+    "CAM_BACK_LEFT",
+]
 
 
 # https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/nuscenes.py#L834
 def map_pointcloud_to_image(
+    path,
     pc,
     im,
     lidar2ego_translation,
@@ -72,64 +81,67 @@ def map_pointcloud_to_image(
     points = points[:, mask]
     coloring = coloring[mask]
 
-    return points, coloring
+    np.concatenate([points[:2, :].T, coloring[:, None]], axis=1).astype(
+        np.float32
+    ).flatten().tofile(path)
 
 
-data_root = "./data/nuscenes"
-info_path_train = "./data/nuscenes/nuscenes_occ_infos_train.pkl"
-info_path_val = "./data/nuscenes/nuscenes_occ_infos_val.pkl"
-
-# data3d_nusc = NuscMVDetData()
-
-lidar_key = "LIDAR_TOP"
-cam_keys = [
-    "CAM_FRONT_LEFT",
-    "CAM_FRONT",
-    "CAM_FRONT_RIGHT",
-    "CAM_BACK_RIGHT",
-    "CAM_BACK",
-    "CAM_BACK_LEFT",
-]
-
-
-def worker(info):
+def list_pointclouds(info, data_dir: str):
     lidar_path = info["lidar_path"]
-    points = np.fromfile(lidar_path, dtype=np.float32, count=-1).reshape(-1, 5)[..., :4]
+    points = np.fromfile(
+        os.path.join(__module_dir__, lidar_path), dtype=np.float32, count=-1
+    ).reshape(-1, 5)[..., :4]
 
     lidar2ego_translation = info["lidar2ego_translation"]
     lidar2ego_rotation = info["lidar2ego_rotation"]
     ego2global_translation = info["ego2global_translation"]
     ego2global_rotation = info["ego2global_rotation"]
-    for i, cam_key in enumerate(cam_keys):
+    for i, cam_key in enumerate(_CAM_KEYS):
         sensor2ego_translation = info["cams"][cam_key]["sensor2ego_translation"]
         sensor2ego_rotation = info["cams"][cam_key]["sensor2ego_rotation"]
         cam_ego2global_translation = info["cams"][cam_key]["ego2global_translation"]
         cam_ego2global_rotation = info["cams"][cam_key]["ego2global_rotation"]
         cam_intrinsic = info["cams"][cam_key]["cam_intrinsic"]
-        img = mmcv.imread(os.path.join(info["cams"][cam_key]["data_path"]))
-        pts_img, depth = map_pointcloud_to_image(
-            points.copy(),
-            img,
-            copy.deepcopy(lidar2ego_translation),
-            copy.deepcopy(lidar2ego_rotation),
-            copy.deepcopy(ego2global_translation),
-            copy.deepcopy(ego2global_rotation),
-            copy.deepcopy(sensor2ego_translation),
-            copy.deepcopy(sensor2ego_rotation),
-            copy.deepcopy(cam_ego2global_translation),
-            copy.deepcopy(cam_ego2global_rotation),
-            copy.deepcopy(cam_intrinsic),
+        img = mmcv.imread(
+            os.path.join(__module_dir__, info["cams"][cam_key]["data_path"])
         )
-
         file_name = os.path.split(info["cams"][cam_key]["data_path"])[-1]
-        np.concatenate([pts_img[:2, :].T, depth[:, None]], axis=1).astype(
-            np.float32
-        ).flatten().tofile(os.path.join("./data", "depth_gt", f"{file_name}.bin"))
+        path = os.path.join(data_dir, "depth_gt", f"{file_name}.bin")
+        yield {
+            "path": path,
+            "pc": points,
+            "im": img,
+            "lidar2ego_translation": lidar2ego_translation,
+            "lidar2ego_rotation": lidar2ego_rotation,
+            "ego2global_translation": ego2global_translation,
+            "ego2global_rotation": ego2global_rotation,
+            "sensor2ego_translation": sensor2ego_translation,
+            "sensor2ego_rotation": sensor2ego_rotation,
+            "cam_ego2global_translation": cam_ego2global_translation,
+            "cam_ego2global_rotation": cam_ego2global_rotation,
+            "cam_intrinsic": cam_intrinsic,
+        }
 
 
 if __name__ == "__main__":
-    os.makedirs(os.path.join("./data", "depth_gt"), exist_ok=True)
+    data_folder = os.path.join(__module_dir__, "data")
+    nuscenes_dir = os.path.join(data_folder, "nuscenes")
+
+    info_path_train = os.path.join(data_folder, "nuscenes_occ_infos_train.pkl")
+    info_path_val = os.path.join(data_folder, "nuscenes_occ_infos_val.pkl")
+
+    lidar_key = "LIDAR_TOP"
+    print("data_dir", nuscenes_dir)
+    print("info_path_train", info_path_train)
+    print("info_path_val", info_path_val)
+    os.makedirs(os.path.join(nuscenes_dir, "depth_gt"), exist_ok=True)
     train_infos = pickle.load(open(info_path_train, "rb"))["infos"]
     val_infos = pickle.load(open(info_path_val, "rb"))["infos"]
     all_infos = train_infos + val_infos
-    list(map(worker, tqdm(all_infos)))
+    pbar = tqdm(total=len(all_infos) * len(_CAM_KEYS), desc="Mapping")
+
+    for info in map(partial(list_pointclouds, data_dir=nuscenes_dir), all_infos):
+        for data in info:
+            map_pointcloud_to_image(**data)
+            # futures.append(executor.submit(map_pointcloud_to_image, **data))
+            pbar.update()
