@@ -14,4 +14,4 @@ SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
 RUN conda create -n OpenOccupancy python=3.9 -y --solver=libmamba -c conda-forge
 SHELL ["conda", "run", "-n", "OpenOccupancy", "/bin/bash", "-c"]
 RUN bash setup.sh
-CMD conda activate OpenOccupancy && bash run.sh
+CMD conda activate OpenOccupancy
